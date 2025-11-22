@@ -1,17 +1,20 @@
 app:
   version_check_url: "https://raw.githubusercontent.com/sansan0/TrendRadar/refs/heads/master/version"
-  show_version_update: true
+  show_version_update: true 
 
 crawler:
   request_interval: 1000
   enable_crawler: true
-  use_proxy: false
+  use_proxy: false 
   default_proxy: "http://127.0.0.1:10086"
 
-# 推送模式选择 - 改为 current 更适合看深度分析和趋势
+# 🟢 修改点1：模式调整
+# 将 mode 改为 'current'。
+# 原因：你需要在早中晚三次获取信息，'daily'（日报）会导致三次看到的内容差不多。
+# 'current' 能让你在吃饭时看到此时此刻正在发生的最新财经和科技动态。
 report:
-  mode: "current" # 从 daily 改为 current，更适合追踪行业趋势
-  rank_threshold: 5
+  mode: "current" 
+  rank_threshold: 5 
 
 notification:
   enable_notification: true
@@ -21,18 +24,22 @@ notification:
   batch_send_interval: 3
   feishu_message_separator: "━━━━━━━━━━━━━━━━━━━"
 
-  # 开启推送时间窗口，匹配你的作息时间
+# 🟢 修改点2：推送窗口设置
+# 设置为 false，并将 once_per_day 设为 false。
+# 逻辑：因为你需要在早(7-9点)、中、晚三次推送，
+# 这里不应该限制时间窗口，而是应该通过 GitHub Actions 的定时任务（Cron）来控制触发时间。
+# 如果这里开启且限制了时间，可能会导致某些时段的推送被拦截。
   push_window:
-    enabled: true  # 从 false 改为 true，开启时间控制
+    enabled: false 
     time_range:
-      start: "07:00"  # 早上7点开始（你的期望时间）
-      end: "21:00"    # 晚上9点结束
-    once_per_day: false  # 保持 false，允许每天3次推送
+      start: "07:00"
+      end: "22:00"
+    once_per_day: false # 允许一天推送多次
     push_record_retention_days: 7
 
-  # Webhooks 保持为空，通过 GitHub Secrets 配置
+# 请按需填写你的 Token/Webhook
   webhooks:
-    feishu_url: ""
+    feishu_url: "" 
     dingtalk_url: ""
     wework_url: ""
     wework_msg_type: "markdown"
@@ -47,30 +54,38 @@ notification:
     ntfy_topic: ""
     ntfy_token: ""
 
-# 热点权重配置（保持默认，适合深度分析）
-weight:
-  rank_weight: 0.6
-  frequency_weight: 0.3
-  hotness_weight: 0.1
+# 🟢 修改点3：权重算法调整
+# 稍微降低了 rank（排名）的权重，提升了 frequency（频次）的权重。
+# 原因：真正的大事（宏观政策、行业地震）通常会在多个专业平台同时出现（频次高）。
+# 单纯的排名高（rank）容易混入标题党或刷榜的娱乐新闻。
+  weight:
+    rank_weight: 0.5      # ⬇️ 降低：减少单纯靠点击量上位的“水贴”
+    frequency_weight: 0.4 # ⬆️ 提升：重视多平台共振的“大事件”
+    hotness_weight: 0.1
 
-# 平台配置 - 优化选择，更适合你的兴趣
-platforms:
-  - id: "zhihu"           # 知乎 - 深度分析和科普内容
-    name: "知乎"
-  - id: "bilibili-hot-search"  # B站 - 科普和数码内容
-    name: "bilibili 热搜"
-  - id: "wallstreetcn-hot"     # 华尔街见闻 - 专业财经
-    name: "华尔街见闻"
-  - id: "cls-hot"         # 财联社 - 财经快讯
-    name: "财联社热门"
-  - id: "thepaper"        # 澎湃新闻 - 深度报道
-    name: "澎湃新闻"
-  - id: "toutiao"         # 今日头条 - 行业资讯
-    name: "今日头条"
-  - id: "weibo"           # 微博 - 但要配合关键词过滤
-    name: "微博"
-  # 关闭以下娱乐性较强的平台
-  # - id: "douyin"
-  # - id: "tieba"
-  # - id: "baidu"
-  # - id: "ifeng"
+# 🟢 修改点4：平台源头深度清洗
+# 核心策略：保留财经+深度+数码，剔除娱乐+灌水
+  platforms:
+    # --- 核心财经（财务专业必看） ---
+    - id: "wallstreetcn-hot"
+      name: "华尔街见闻"  # 专业的宏观/金融资讯，包含深度研报
+    - id: "cls-hot"
+      name: "财联社"      # 股市、一级市场快讯，速度极快
+
+    # --- 深度与数码（满足深度分析与数码科普） ---
+    - id: "thepaper"
+      name: "澎湃新闻"    # 相对严谨的时政与社会新闻，减少造谣概率
+    - id: "zhihu"
+      name: "知乎热榜"    # 适合看事件的“深度分析”和多角度观点
+    
+    # --- 电子榨菜（吃饭时看） ---
+    - id: "bilibili-hot-search"
+      name: "B站热搜"     # 涵盖数码评测、硬核科普视频，适合佐餐
+
+    # --- 已移除的平台及原因 ---
+    # - id: "weibo"   -> 移除：太多娱乐花边、饭圈互撕，信噪比极低
+    # - id: "douyin"  -> 移除：碎片化严重，甚至不仅是花边，还有很多演绎剧本
+    # - id: "tieba"   -> 移除：情绪化严重，造谣高发区
+    # - id: "toutiao" -> 移除：算法推荐导致标题党严重
+    # - id: "baidu"   -> 移除：内容过杂，容易混入社会猎奇新闻
+    # - id: "ifeng"   -> 移除：相对中庸，为减少阅读负担予以移除
